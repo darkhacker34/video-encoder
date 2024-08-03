@@ -8,11 +8,14 @@ WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install Flask
+RUN pip install flask
+
 # Copy the rest of the application code
 COPY . .
 
-# Expose port 80 (optional, if your application listens on a specific port)
+# Expose port 8000 for Flask
 EXPOSE 8000
 
-# Run the bot
+# Run the bot and Flask app
 CMD ["python", "-m", "bot.__main__"]
