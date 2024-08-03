@@ -37,21 +37,46 @@ video_mimetype = [
 
 @app.on_message(filters.incoming & filters.command(['start', 'help']))
 def help_message(app, message):
-    message.reply_text(f"Hi {message.from_user.mention()}\nI can encode Telegram files in x265, just send me a video.", quote=True)
+    try:
+        reply_text = f"Hi {message.from_user.mention()}\nI can encode Telegram files in x265, just send me a video."
+        logging.info(f"Sending help message: {reply_text}")
+        message.reply_text(reply_text, quote=True)
+    except Exception as e:
+        logging.error(f"Error sending help message: {e}")
 
 @app.on_message(filters.user(sudo_users) & filters.incoming & (filters.video | filters.document))
 def encode_video(app, message):
-    if message.document:
-        if not message.document.mime_type in video_mimetype:
-            message.reply_text("```Invalid Video !\nMake sure its a valid video file.```", quote=True)
-            return
-    message.reply_text("```Added to queue...```", quote=True)
-    data.append(message)
-    if len(data) == 1:
-        add_task(message)
+    try:
+        if message.document:
+            if not message.document.mime_type in video_mimetype:
+                logging.error(f"Invalid video MIME type: {message.document.mime_type}")
+                reply_text = "```Invalid Video !\nMake sure its a valid video file.```"
+                logging.info(f"Sending invalid video reply: {reply_text}")
+                message.reply_text(reply_text, quote=True)
+                return
+        
+        # Log the message being sent
+        reply_text = "```Added to queue...```"
+        if reply_text.strip() == "":
+            logging.error("Attempted to send an empty message")
+        else:
+            logging.info(f"Sending reply: {reply_text}")
+            message.reply_text(reply_text, quote=True)
+        
+        data.append(message)
+        if len(data) == 1:
+            add_task(message)
+    except Exception as e:
+        logging.error(f"Error handling message: {e}")
+        reply_text = f"```Error: {e}```"
+        logging.info(f"Sending error reply: {reply_text}")
+        message.reply_text(reply_text, quote=True)
 
 # Run Flask and Pyrogram concurrently
 if __name__ == "__main__":
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    
     # Start Flask server in a separate thread
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.daemon = True
@@ -59,6 +84,7 @@ if __name__ == "__main__":
     
     # Run the Pyrogram bot
     try:
+        logging.info("Starting the Pyrogram bot.")
         app.run()
     except KeyboardInterrupt:
         logging.info("Shutting down the bot.")
