@@ -52,6 +52,7 @@ def help_message(app, message):
 
 @pyrogram_app.on_message(filters.user(sudo_users) & filters.incoming & (filters.video | filters.document))
 def encode_video(app, message):
+    msg = None
     try:
         if message.document:
             if not message.document.mime_type in video_mimetype:
@@ -62,23 +63,22 @@ def encode_video(app, message):
                 message.reply_text(reply_text, quote=True)
                 return
         
-        reply_text = "Added to queue..."
-        reply_text = sanitize_message(reply_text)
-        if reply_text.strip() == "":
-            logging.error("Attempted to send an empty message")
-        else:
-            logging.info(f"Sending reply: {reply_text}")
-            message.reply_text(reply_text, quote=True)
-        
+        msg = message.reply_text("Added to queue...", quote=True)
         data.append(message)
         if len(data) == 1:
             add_task(message)
     except Exception as e:
-        logging.error(f"Error handling message: {e}")
-        reply_text = f"Error: {e}"
-        reply_text = sanitize_message(reply_text)
-        logging.info(f"Sending error reply: {reply_text}")
-        message.reply_text(reply_text, quote=True)
+        if msg:
+            logging.error(f"Error handling message: {e}")
+            reply_text = f"Error: {e}"
+            reply_text = sanitize_message(reply_text)
+            logging.info(f"Sending error reply: {reply_text}")
+            msg.edit(reply_text)
+        else:
+            logging.error(f"Error: {e}")
+    finally:
+        if msg and msg.text == "Added to queue...":
+            msg.edit("Added to queue...")
 
 # Run Flask and Pyrogram concurrently
 if __name__ == "__main__":
