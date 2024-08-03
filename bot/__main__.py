@@ -52,11 +52,9 @@ def help_message(app, message):
 
 @pyrogram_app.on_message(filters.user(sudo_users) & filters.incoming & (filters.video | filters.document))
 def encode_video(app, message):
-    msg = None
     try:
         if message.document:
             if not message.document.mime_type in video_mimetype:
-                logging.error(f"Invalid video MIME type: {message.document.mime_type}")
                 reply_text = "Invalid Video! Make sure it's a valid video file."
                 reply_text = sanitize_message(reply_text)
                 logging.info(f"Sending invalid video reply: {reply_text}")
@@ -67,18 +65,22 @@ def encode_video(app, message):
         data.append(message)
         if len(data) == 1:
             add_task(message)
+        
+        # Update the message if needed (optional)
+        msg.edit("Added to queue...")
     except Exception as e:
-        if msg:
-            logging.error(f"Error handling message: {e}")
-            reply_text = f"Error: {e}"
-            reply_text = sanitize_message(reply_text)
-            logging.info(f"Sending error reply: {reply_text}")
-            msg.edit(reply_text)
-        else:
-            logging.error(f"Error: {e}")
-    finally:
-        if msg and msg.text == "Added to queue...":
-            msg.edit("Added to queue...")
+        logging.error(f"Error handling message: {e}")
+        try:
+            if 'msg' in locals():  # Ensure msg is defined before attempting to edit
+                reply_text = f"Error: {e}"
+                reply_text = sanitize_message(reply_text)
+                logging.info(f"Sending error reply: {reply_text}")
+                msg.edit(reply_text)
+            else:
+                # Handle case where msg might not be initialized
+                message.reply_text(f"Error: {e}", quote=True)
+        except Exception as inner_e:
+            logging.error(f"Error sending error reply: {inner_e}")
 
 # Run Flask and Pyrogram concurrently
 if __name__ == "__main__":
