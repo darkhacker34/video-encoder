@@ -1,7 +1,7 @@
-from pyrogram import Client, filters
 from flask import Flask, jsonify
 import threading
-from bot import data, sudo_users
+import logging
+from bot import app, data, sudo_users
 from bot.helper.utils import add_task
 
 # Initialize Flask app
@@ -12,7 +12,10 @@ def status():
     return jsonify({'status': 'Bot is running'})
 
 def run_flask():
-    flask_app.run(host='0.0.0.0', port=8000)  # You can set the port as needed
+    try:
+        flask_app.run(host='0.0.0.0', port=8000)  # Port 8000
+    except Exception as e:
+        logging.error(f"Flask app encountered an error: {e}")
 
 # Pyrogram bot setup
 video_mimetype = [
@@ -30,8 +33,6 @@ video_mimetype = [
     "video/quicktime",
     "video/mpeg"
 ]
-
-app = Client(":memory:", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
 @app.on_message(filters.incoming & filters.command(['start', 'help']))
 def help_message(app, message):
@@ -56,4 +57,7 @@ if __name__ == "__main__":
     flask_thread.start()
     
     # Run the Pyrogram bot
-    app.run()
+    try:
+        app.run()
+    except KeyboardInterrupt:
+        logging.info("Shutting down the bot.")
