@@ -1,3 +1,4 @@
+from pyrogram import Client, filters
 from flask import Flask, jsonify
 import threading
 import logging
