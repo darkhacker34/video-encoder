@@ -68,9 +68,12 @@ def encode_video(app, message):
         if len(data) == 1:
             add_task(message)
         
-        # Update the message if needed (optional)
+        # Update the message if needed (only if content has changed)
         if msg:
-            msg.edit("Added to queue...")
+            current_text = msg.text
+            new_text = "Added to queue..."
+            if current_text != new_text:
+                msg.edit(new_text)
     except Exception as e:
         logging.error(f"Error handling message: {e}")
         try:
@@ -79,7 +82,9 @@ def encode_video(app, message):
                 reply_text = f"Error: {e}"
                 reply_text = sanitize_message(reply_text)
                 logging.info(f"Sending error reply: {reply_text}")
-                msg.edit(reply_text)
+                current_text = msg.text
+                if current_text != reply_text:
+                    msg.edit(reply_text)
             else:
                 # Handle case where msg might not be initialized
                 message.reply_text(f"Error: {e}", quote=True)
