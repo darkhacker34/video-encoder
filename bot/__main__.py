@@ -52,26 +52,30 @@ def help_message(app, message):
 
 @pyrogram_app.on_message(filters.user(sudo_users) & filters.incoming & (filters.video | filters.document))
 def encode_video(app, message):
+    msg = None  # Initialize msg to handle potential exceptions
     try:
         if message.document:
-            if not message.document.mime_type in video_mimetype:
+            if message.document.mime_type not in video_mimetype:
                 reply_text = "Invalid Video! Make sure it's a valid video file."
                 reply_text = sanitize_message(reply_text)
                 logging.info(f"Sending invalid video reply: {reply_text}")
                 message.reply_text(reply_text, quote=True)
                 return
         
+        # Reply initially and set msg
         msg = message.reply_text("Added to queue...", quote=True)
         data.append(message)
         if len(data) == 1:
             add_task(message)
         
         # Update the message if needed (optional)
-        msg.edit("Added to queue...")
+        if msg:
+            msg.edit("Added to queue...")
     except Exception as e:
         logging.error(f"Error handling message: {e}")
         try:
-            if 'msg' in locals():  # Ensure msg is defined before attempting to edit
+            # Check if msg was initialized
+            if msg:
                 reply_text = f"Error: {e}"
                 reply_text = sanitize_message(reply_text)
                 logging.info(f"Sending error reply: {reply_text}")
